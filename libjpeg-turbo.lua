@@ -260,7 +260,16 @@ project "jpeg"
 
     -- project specific configuration settings
 
-    -- configuration { "ios_arm64_debug" }
+    configuration { "ios_arm64_debug" }
+
+      defines {
+        "WITH_SIMD",
+      }
+
+      files {
+        "simd/arm64/jsimd.c",
+        "simd/arm64/jsimd_neon.S",
+      }
 
     -- -------------------------------------------------------------
     -- configuration { "ios_arm64_release" }
@@ -272,7 +281,16 @@ project "jpeg"
 
     -- project specific configuration settings
 
-    -- configuration { "ios_arm64_release" }
+    configuration { "ios_arm64_release" }
+
+      defines {
+        "WITH_SIMD",
+      }
+
+      files {
+        "simd/arm64/jsimd.c",
+        "simd/arm64/jsimd_neon.S",
+      }
 
     -- -------------------------------------------------------------
     -- configuration { "ios_sim64_debug" }
@@ -328,7 +346,16 @@ project "jpeg"
 
     -- project specific configuration settings
 
-    -- configuration { "android_armv7_debug" }
+    configuration { "android_armv7_debug" }
+
+      defines {
+        "WITH_SIMD",
+      }
+
+      files {
+        "simd/arm/jsimd.c",
+        "simd/arm/jsimd_neon.S",
+      }
 
     -- -------------------------------------------------------------
     -- configuration { "android_armv7_release" }
@@ -340,7 +367,16 @@ project "jpeg"
 
     -- project specific configuration settings
 
-    -- configuration { "android_armv7_release" }
+    configuration { "android_armv7_release" }
+
+      defines {
+        "WITH_SIMD",
+      }
+
+      files {
+        "simd/arm/jsimd.c",
+        "simd/arm/jsimd_neon.S",
+      }
 
     -- -------------------------------------------------------------
     -- configuration { "android_x86_debug" }
@@ -376,7 +412,16 @@ project "jpeg"
 
     -- project specific configuration settings
 
-    -- configuration { "android_arm64_debug" }
+    configuration { "android_arm64_debug" }
+
+      defines {
+        "WITH_SIMD",
+      }
+
+      files {
+        "simd/arm64/jsimd.c",
+        "simd/arm64/jsimd_neon.S",
+      }
 
     -- -------------------------------------------------------------
     -- configuration { "android_arm64_release" }
@@ -388,7 +433,16 @@ project "jpeg"
 
     -- project specific configuration settings
 
-    -- configuration { "android_arm64_release" }
+    configuration { "android_arm64_release" }
+
+      defines {
+        "WITH_SIMD",
+      }
+
+      files {
+        "simd/arm64/jsimd.c",
+        "simd/arm64/jsimd_neon.S",
+      }
 
     -- -------------------------------------------------------------
   end
