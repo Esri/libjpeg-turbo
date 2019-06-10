@@ -483,6 +483,10 @@ project "jpeg"
 
     dofile (_BUILD_DIR .. "/static_winuwp.lua")
 
+    defines {
+      "_CRT_SECURE_NO_WARNINGS",
+    }
+
     -- project specific configuration settings
 
     -- configuration { "windows" }
