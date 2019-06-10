@@ -372,8 +372,8 @@ project "jpeg"
       }
 
       files {
-        "simd/arm/jsimd.c",
-        "simd/arm/jsimd_neon.S",
+        "simd/arm/jsimd_arm.c",
+        "simd/arm/jsimd_neon_arm.S",
       }
 
     -- -------------------------------------------------------------
@@ -393,8 +393,8 @@ project "jpeg"
       }
 
       files {
-        "simd/arm/jsimd.c",
-        "simd/arm/jsimd_neon.S",
+        "simd/arm/jsimd_arm.c",
+        "simd/arm/jsimd_neon_arm.S",
       }
 
     -- -------------------------------------------------------------
