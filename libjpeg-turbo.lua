@@ -68,7 +68,6 @@ project "jpeg"
     "jmemnobs.c",
     "jquant1.c",
     "jquant2.c",
-    "jsimd_none.c",
     "jutils.c",
   }
 
@@ -84,6 +83,10 @@ project "jpeg"
 
     defines {
       "TURBO_FOR_WINDOWS",
+    }
+
+    files {
+      "jsimd_none.c",
     }
   
   end
@@ -163,7 +166,11 @@ project "jpeg"
 
     -- project specific configuration settings
 
-    -- configuration { "linux" }
+    configuration { "linux" }
+
+      files {
+        "jsimd_none.c",
+      }
 
     -- -------------------------------------------------------------
     -- configuration { "linux", "Debug", "x64" }
@@ -203,7 +210,11 @@ project "jpeg"
 
     -- project specific configuration settings
 
-    -- configuration { "macosx" }
+    configuration { "macosx" }
+
+      files {
+        "jsimd_none.c",
+      }
 
     -- -------------------------------------------------------------
     -- configuration { "macosx", "Debug", "x64" }
@@ -302,7 +313,11 @@ project "jpeg"
 
     -- project specific configuration settings
 
-    -- configuration { "ios_sim64_debug" }
+    configuration { "ios_sim64_debug" }
+
+      files {
+        "jsimd_none.c",
+      }
 
     -- -------------------------------------------------------------
     -- configuration { "ios_sim64_release" }
@@ -314,7 +329,11 @@ project "jpeg"
 
     -- project specific configuration settings
 
-    -- configuration { "ios_sim64_release" }
+    configuration { "ios_sim64_release" }
+
+      files {
+        "jsimd_none.c",
+      }
 
     -- -------------------------------------------------------------
   end
@@ -388,7 +407,11 @@ project "jpeg"
 
     -- project specific configuration settings
 
-    -- configuration { "android_x86_debug" }
+    configuration { "android_x86_debug" }
+
+      files {
+        "jsimd_none.c",
+      }
 
     -- -------------------------------------------------------------
     -- configuration { "android_x86_release" }
@@ -400,7 +423,11 @@ project "jpeg"
 
     -- project specific configuration settings
 
-    -- configuration { "android_x86_release" }
+    configuration { "android_x86_release" }
+
+      files {
+        "jsimd_none.c",
+      }
 
     -- -------------------------------------------------------------
     -- configuration { "android_arm64_debug" }
