@@ -278,8 +278,8 @@ project "jpeg"
       }
 
       files {
-        "simd/arm64/jsimd.c",
-        "simd/arm64/jsimd_neon.S",
+        "simd/arm64/jsimd_arm64.c",
+        "simd/arm64/jsimd_neon_arm64.S",
       }
 
     -- -------------------------------------------------------------
@@ -299,8 +299,8 @@ project "jpeg"
       }
 
       files {
-        "simd/arm64/jsimd.c",
-        "simd/arm64/jsimd_neon.S",
+        "simd/arm64/jsimd_arm64.c",
+        "simd/arm64/jsimd_neon_arm64.S",
       }
 
     -- -------------------------------------------------------------
@@ -446,8 +446,8 @@ project "jpeg"
       }
 
       files {
-        "simd/arm64/jsimd.c",
-        "simd/arm64/jsimd_neon.S",
+        "simd/arm64/jsimd_arm64.c",
+        "simd/arm64/jsimd_neon_arm64.S",
       }
 
     -- -------------------------------------------------------------
@@ -467,8 +467,8 @@ project "jpeg"
       }
 
       files {
-        "simd/arm64/jsimd.c",
-        "simd/arm64/jsimd_neon.S",
+        "simd/arm64/jsimd_arm64.c",
+        "simd/arm64/jsimd_neon_arm64.S",
       }
 
     -- -------------------------------------------------------------
