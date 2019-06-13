@@ -75,21 +75,23 @@ project "jpeg"
     "./",
   }
 
+  local opts_simd_none = {
+    "jsimd_none.c",
+  }
+
+  local opts_simd_arm = {
+    "simd/arm/jsimd_arm.c",
+    "simd/arm/jsimd_neon_arm.S",
+  }
+
+  local opts_simd_arm64 = {
+    "simd/arm64/jsimd_arm64.c",
+    "simd/arm64/jsimd_neon_arm64.S",
+  }
+
   -- -------------------------------------------------------------
   -- configurations
   -- -------------------------------------------------------------
-
-  if (os.is("windows")) then
-
-    defines {
-      "TURBO_FOR_WINDOWS",
-    }
-
-    files {
-      "jsimd_none.c",
-    }
-  
-  end
 
   if (os.is("windows") and not _TARGET_IS_WINUWP) then
     -- -------------------------------------------------------------
@@ -102,7 +104,15 @@ project "jpeg"
 
     -- project specific configuration settings
 
-    -- configuration { "windows" }
+    configuration { "windows" }
+
+      defines {
+        "TURBO_FOR_WINDOWS",
+      }
+
+      files {
+        opts_simd_none,
+      }
 
     -- -------------------------------------------------------------
     -- configuration { "windows", "Debug", "x32" }
@@ -169,7 +179,7 @@ project "jpeg"
     configuration { "linux" }
 
       files {
-        "jsimd_none.c",
+        opts_simd_none,
       }
 
     -- -------------------------------------------------------------
@@ -213,7 +223,7 @@ project "jpeg"
     configuration { "macosx" }
 
       files {
-        "jsimd_none.c",
+        opts_simd_none,
       }
 
     -- -------------------------------------------------------------
@@ -254,12 +264,7 @@ project "jpeg"
 
     -- project specific configuration settings
 
-    configuration { "ios*" }
-
-      defines {
-        "_REENTRANT",
-        "NATIVECOMPILE",
-      }
+    -- configuration { "ios*" }
 
     -- -------------------------------------------------------------
     -- configuration { "ios_arm64_debug" }
@@ -278,8 +283,7 @@ project "jpeg"
       }
 
       files {
-        "simd/arm64/jsimd_arm64.c",
-        "simd/arm64/jsimd_neon_arm64.S",
+        opts_simd_arm64,
       }
 
     -- -------------------------------------------------------------
@@ -299,8 +303,7 @@ project "jpeg"
       }
 
       files {
-        "simd/arm64/jsimd_arm64.c",
-        "simd/arm64/jsimd_neon_arm64.S",
+        opts_simd_arm64,
       }
 
     -- -------------------------------------------------------------
@@ -316,7 +319,7 @@ project "jpeg"
     configuration { "ios_sim64_debug" }
 
       files {
-        "jsimd_none.c",
+        opts_simd_none,
       }
 
     -- -------------------------------------------------------------
@@ -332,7 +335,7 @@ project "jpeg"
     configuration { "ios_sim64_release" }
 
       files {
-        "jsimd_none.c",
+        opts_simd_none,
       }
 
     -- -------------------------------------------------------------
@@ -349,11 +352,7 @@ project "jpeg"
 
     -- project specific configuration settings
 
-    configuration { "android*" }
-
-      defines {
-        "HAVE_MEMMOVE",
-      }
+    -- configuration { "android*" }
 
     -- -------------------------------------------------------------
     -- configuration { "android_armv7_debug" }
@@ -372,8 +371,7 @@ project "jpeg"
       }
 
       files {
-        "simd/arm/jsimd_arm.c",
-        "simd/arm/jsimd_neon_arm.S",
+        opts_simd_arm,
       }
 
     -- -------------------------------------------------------------
@@ -393,8 +391,7 @@ project "jpeg"
       }
 
       files {
-        "simd/arm/jsimd_arm.c",
-        "simd/arm/jsimd_neon_arm.S",
+        opts_simd_arm,
       }
 
     -- -------------------------------------------------------------
@@ -410,7 +407,7 @@ project "jpeg"
     configuration { "android_x86_debug" }
 
       files {
-        "jsimd_none.c",
+        opts_simd_none,
       }
 
     -- -------------------------------------------------------------
@@ -426,7 +423,7 @@ project "jpeg"
     configuration { "android_x86_release" }
 
       files {
-        "jsimd_none.c",
+        opts_simd_none,
       }
 
     -- -------------------------------------------------------------
@@ -446,8 +443,7 @@ project "jpeg"
       }
 
       files {
-        "simd/arm64/jsimd_arm64.c",
-        "simd/arm64/jsimd_neon_arm64.S",
+        opts_simd_arm64,
       }
 
     -- -------------------------------------------------------------
@@ -467,8 +463,7 @@ project "jpeg"
       }
 
       files {
-        "simd/arm64/jsimd_arm64.c",
-        "simd/arm64/jsimd_neon_arm64.S",
+        opts_simd_arm64,
       }
 
     -- -------------------------------------------------------------
@@ -483,13 +478,18 @@ project "jpeg"
 
     dofile (_BUILD_DIR .. "/static_winuwp.lua")
 
-    defines {
-      "_CRT_SECURE_NO_WARNINGS",
-    }
-
     -- project specific configuration settings
 
-    -- configuration { "windows" }
+    configuration { "windows" }
+
+      defines {
+        "TURBO_FOR_WINDOWS",
+        "_CRT_SECURE_NO_WARNINGS",
+      }
+
+      files {
+        opts_simd_none,
+      }
 
     -- -------------------------------------------------------------
     -- configuration { "winuwp_debug", "x32" }
