@@ -13,7 +13,7 @@ project "jpeg"
 
   -- project specific settings
 
-  uuid "6FE17C62-A43E-4343-B910-C3644A68F602"
+  uuid "9A746419-F4A6-4D7A-8819-689F1F12C3AF"
 
   flags {
     "NoPCH",
