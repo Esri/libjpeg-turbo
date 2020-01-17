@@ -410,8 +410,8 @@ static void compTest(tjhandle handle, unsigned char **dstBuf,
   printf("Done.\n  Result in %s\n", tempStr);
 
 bailout:
-  if (yuvBuf) free(yuvBuf);
-  if (srcBuf) free(srcBuf);
+  free(yuvBuf);
+  free(srcBuf);
 }
 
 
@@ -478,8 +478,8 @@ static void _decompTest(tjhandle handle, unsigned char *jpegBuf,
   printf("\n");
 
 bailout:
-  if (yuvBuf) free(yuvBuf);
-  if (dstBuf) free(dstBuf);
+  free(yuvBuf);
+  free(dstBuf);
 }
 
 
@@ -550,7 +550,43 @@ static void doTest(int w, int h, const int *formats, int nformats, int subsamp,
 bailout:
   if (chandle) tjDestroy(chandle);
   if (dhandle) tjDestroy(dhandle);
-  if (dstBuf) tjFree(dstBuf);
+  tjFree(dstBuf);
+}
+
+
+#if SIZEOF_SIZE_T == 8
+#define CHECKSIZE(function) { \
+  if ((unsigned long long)size < (unsigned long long)0xFFFFFFFF) \
+    THROW(#function " overflow"); \
+}
+#else
+#define CHECKSIZE(function) { \
+  if (size != (unsigned long)(-1) || \
+      !strcmp(tjGetErrorStr2(NULL), "No error")) \
+    THROW(#function " overflow"); \
+}
+#endif
+
+static void overflowTest(void)
+{
+  /* Ensure that the various buffer size functions don't overflow */
+  unsigned long size;
+
+  size = tjBufSize(26755, 26755, TJSAMP_444);
+  CHECKSIZE(tjBufSize());
+  size = TJBUFSIZE(26755, 26755);
+  CHECKSIZE(TJBUFSIZE());
+  size = tjBufSizeYUV2(37838, 1, 37838, TJSAMP_444);
+  CHECKSIZE(tjBufSizeYUV2());
+  size = TJBUFSIZEYUV(37838, 37838, TJSAMP_444);
+  CHECKSIZE(TJBUFSIZEYUV());
+  size = tjBufSizeYUV(37838, 37838, TJSAMP_444);
+  CHECKSIZE(tjBufSizeYUV());
+  size = tjPlaneSizeYUV(0, 65536, 0, 65536, TJSAMP_444);
+  CHECKSIZE(tjPlaneSizeYUV());
+
+bailout:
+  return;
 }
 
 
@@ -629,8 +665,8 @@ static void bufSizeTest(void)
   printf("Done.      \n");
 
 bailout:
-  if (srcBuf) free(srcBuf);
-  if (dstBuf) tjFree(dstBuf);
+  free(srcBuf);
+  tjFree(dstBuf);
   if (handle) tjDestroy(handle);
 }
 
@@ -803,7 +839,7 @@ static int doBmpTest(const char *ext, int width, int align, int height, int pf,
   unlink(filename);
 
 bailout:
-  if (buf) tjFree(buf);
+  tjFree(buf);
   if (exitStatus < 0) return exitStatus;
   return retval;
 }
@@ -865,6 +901,7 @@ int main(int argc, char *argv[])
   }
   if (alloc) printf("Testing automatic buffer allocation\n");
   if (doYUV) num4bf = 4;
+  overflowTest();
   doTest(35, 39, _3byteFormats, 2, TJSAMP_444, "test");
   doTest(39, 41, _4byteFormats, num4bf, TJSAMP_444, "test");
   doTest(41, 35, _3byteFormats, 2, TJSAMP_422, "test");
