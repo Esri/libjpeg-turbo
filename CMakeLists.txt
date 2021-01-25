@@ -5,7 +5,7 @@ if(CMAKE_EXECUTABLE_SUFFIX)
 endif()
 
 project(libjpeg-turbo C)
-set(VERSION 2.0.6)
+set(VERSION 2.0.91)
 string(REPLACE "." ";" VERSION_TRIPLET ${VERSION})
 list(GET VERSION_TRIPLET 0 VERSION_MAJOR)
 list(GET VERSION_TRIPLET 1 VERSION_MINOR)
@@ -41,12 +41,19 @@ message(STATUS "VERSION = ${VERSION}, BUILD = ${BUILD}")
 # Detect CPU type and whether we're building 64-bit or 32-bit code
 math(EXPR BITS "${CMAKE_SIZEOF_VOID_P} * 8")
 string(TOLOWER ${CMAKE_SYSTEM_PROCESSOR} CMAKE_SYSTEM_PROCESSOR_LC)
+set(COUNT 1)
+foreach(ARCH ${CMAKE_OSX_ARCHITECTURES})
+  if(COUNT GREATER 1)
+    message(FATAL_ERROR "The libjpeg-turbo build system does not support multiple values in CMAKE_OSX_ARCHITECTURES.")
+  endif()
+  math(EXPR COUNT "${COUNT}+1")
+endforeach()
 if(CMAKE_SYSTEM_PROCESSOR_LC MATCHES "x86_64" OR
   CMAKE_SYSTEM_PROCESSOR_LC MATCHES "amd64" OR
   CMAKE_SYSTEM_PROCESSOR_LC MATCHES "i[0-9]86" OR
   CMAKE_SYSTEM_PROCESSOR_LC MATCHES "x86" OR
   CMAKE_SYSTEM_PROCESSOR_LC MATCHES "ia32")
-  if(BITS EQUAL 64)
+  if(BITS EQUAL 64 OR CMAKE_C_COMPILER_ABI MATCHES "ELF X32")
     set(CPU_TYPE x86_64)
   else()
     set(CPU_TYPE i386)
@@ -55,16 +62,30 @@ if(CMAKE_SYSTEM_PROCESSOR_LC MATCHES "x86_64" OR
     set(CMAKE_SYSTEM_PROCESSOR ${CPU_TYPE})
   endif()
 elseif(CMAKE_SYSTEM_PROCESSOR_LC STREQUAL "aarch64" OR
-  CMAKE_SYSTEM_PROCESSOR_LC MATCHES "arm*64*")
-  set(CPU_TYPE arm64)
-elseif(CMAKE_SYSTEM_PROCESSOR_LC MATCHES "arm*")
-  set(CPU_TYPE arm)
+  CMAKE_SYSTEM_PROCESSOR_LC MATCHES "arm*")
+  if(BITS EQUAL 64)
+    set(CPU_TYPE arm64)
+  else()
+    set(CPU_TYPE arm)
+  endif()
 elseif(CMAKE_SYSTEM_PROCESSOR_LC MATCHES "ppc*" OR
   CMAKE_SYSTEM_PROCESSOR_LC MATCHES "powerpc*")
   set(CPU_TYPE powerpc)
 else()
   set(CPU_TYPE ${CMAKE_SYSTEM_PROCESSOR_LC})
 endif()
+if(CMAKE_OSX_ARCHITECTURES MATCHES "x86_64" OR
+  CMAKE_OSX_ARCHITECTURES MATCHES "arm64" OR
+  CMAKE_OSX_ARCHITECTURES MATCHES "i386")
+  set(CPU_TYPE ${CMAKE_OSX_ARCHITECTURES})
+endif()
+if(CMAKE_OSX_ARCHITECTURES MATCHES "ppc")
+  set(CPU_TYPE powerpc)
+endif()
+if(MSVC_IDE AND CMAKE_GENERATOR_PLATFORM MATCHES "arm64")
+  set(CPU_TYPE arm64)
+endif()
+
 message(STATUS "${BITS}-bit build (${CPU_TYPE})")
 
 
@@ -82,7 +103,9 @@ if(WIN32)
     set(CMAKE_INSTALL_DEFAULT_PREFIX "${CMAKE_INSTALL_DEFAULT_PREFIX}64")
   endif()
 else()
-  set(CMAKE_INSTALL_DEFAULT_PREFIX /opt/${CMAKE_PROJECT_NAME})
+  if(NOT CMAKE_INSTALL_DEFAULT_PREFIX)
+    set(CMAKE_INSTALL_DEFAULT_PREFIX /opt/${CMAKE_PROJECT_NAME})
+  endif()
 endif()
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   set(CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_DEFAULT_PREFIX}" CACHE PATH
@@ -101,6 +124,8 @@ if(CMAKE_INSTALL_PREFIX STREQUAL "${CMAKE_INSTALL_DEFAULT_PREFIX}")
   if(UNIX AND NOT APPLE)
     if(BITS EQUAL 64)
       set(CMAKE_INSTALL_DEFAULT_LIBDIR "lib64")
+    elseif(CMAKE_C_COMPILER_ABI MATCHES "ELF X32")
+      set(CMAKE_INSTALL_DEFAULT_LIBDIR "libx32")
     else()
       set(CMAKE_INSTALL_DEFAULT_LIBDIR "lib32")
     endif()
@@ -133,9 +158,9 @@ endforeach()
 
 macro(boolean_number var)
   if(${var})
-    set(${var} 1)
+    set(${var} 1 ${ARGN})
   else()
-    set(${var} 0)
+    set(${var} 0 ${ARGN})
   endif()
 endmacro()
 
@@ -151,8 +176,12 @@ option(WITH_ARITH_DEC "Include arithmetic decoding support when emulating the li
 boolean_number(WITH_ARITH_DEC)
 option(WITH_ARITH_ENC "Include arithmetic encoding support when emulating the libjpeg v6b API/ABI" TRUE)
 boolean_number(WITH_ARITH_ENC)
-option(WITH_JAVA "Build Java wrapper for the TurboJPEG API library (implies ENABLE_SHARED=1)" FALSE)
-boolean_number(WITH_JAVA)
+if(CMAKE_C_COMPILER_ABI MATCHES "ELF X32")
+  set(WITH_JAVA 0)
+else()
+  option(WITH_JAVA "Build Java wrapper for the TurboJPEG API library (implies ENABLE_SHARED=1)" FALSE)
+  boolean_number(WITH_JAVA)
+endif()
 option(WITH_JPEG7 "Emulate libjpeg v7 API/ABI (this makes ${CMAKE_PROJECT_NAME} backward-incompatible with libjpeg v6b)" FALSE)
 boolean_number(WITH_JPEG7)
 option(WITH_JPEG8 "Emulate libjpeg v8 API/ABI (this makes ${CMAKE_PROJECT_NAME} backward-incompatible with libjpeg v6b)" FALSE)
@@ -193,6 +222,14 @@ if(ENABLE_SHARED)
   set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_FULL_LIBDIR})
 endif()
 
+if(WITH_JPEG8 OR WITH_JPEG7)
+  set(WITH_ARITH_ENC 1)
+  set(WITH_ARITH_DEC 1)
+endif()
+if(WITH_JPEG8)
+  set(WITH_MEM_SRCDST 0)
+endif()
+
 if(WITH_12BIT)
   set(WITH_ARITH_DEC 0)
   set(WITH_ARITH_ENC 0)
@@ -204,14 +241,6 @@ else()
   set(BITS_IN_JSAMPLE 8)
 endif()
 report_option(WITH_12BIT "12-bit JPEG support")
-
-if(WITH_JPEG8 OR WITH_JPEG7)
-  set(WITH_ARITH_ENC 1)
-  set(WITH_ARITH_DEC 1)
-endif()
-if(WITH_JPEG8)
-  set(WITH_MEM_SRCDST 0)
-endif()
 
 if(WITH_ARITH_DEC)
   set(D_ARITH_CODING_SUPPORTED 1)
@@ -414,13 +443,6 @@ if(UNIX)
         exit(is_shifting_signed(-0x7F7E80B1L));
       }" RIGHT_SHIFT_IS_UNSIGNED)
   endif()
-
-  if(CMAKE_CROSSCOMPILING)
-    set(__CHAR_UNSIGNED__ 0)
-  else()
-    check_c_source_runs("int main(void) { return ((char) -1 < 0); }"
-      __CHAR_UNSIGNED__)
-  endif()
 endif()
 
 if(MSVC)
@@ -546,6 +568,9 @@ endif()
 
 if(WITH_SIMD)
   add_subdirectory(simd)
+  if(NEON_INTRINSICS)
+    add_definitions(-DNEON_INTRINSICS)
+  endif()
 elseif(NOT WITH_12BIT)
   message(STATUS "SIMD extensions: None (WITH_SIMD = ${WITH_SIMD})")
 endif()
@@ -696,6 +721,8 @@ if(WITH_12BIT)
   set(MD5_PPM_RGB_ISLOW f3301d2219783b8b3d942b7239fa50c0)
   set(MD5_JPEG_422_IFAST_OPT 7322e3bd2f127f7de4b40d4480ce60e4)
   set(MD5_PPM_422_IFAST 79807fa552899e66a04708f533e16950)
+  set(MD5_JPEG_440_ISLOW e25c1912e38367be505a89c410c1c2d2)
+  set(MD5_PPM_440_ISLOW e7d2e26288870cfcb30f3114ad01e380)
   set(MD5_PPM_422M_IFAST 07737bfe8a7c1c87aaa393a0098d16b0)
   set(MD5_JPEG_420_IFAST_Q100_PROG 008ab68d6ddbba04a8f01deee4e0f9f8)
   set(MD5_PPM_420_Q100_IFAST 1b3730122709f53d007255e8dfd3305e)
@@ -707,10 +734,11 @@ if(WITH_12BIT)
 
   set(MD5_JPEG_3x2_FLOAT_PROG_SSE a8c17daf77b457725ec929e215b603f8)
   set(MD5_PPM_3x2_FLOAT_SSE 42876ab9e5c2f76a87d08db5fbd57956)
-  set(MD5_JPEG_3x2_FLOAT_PROG_32BIT a8c17daf77b457725ec929e215b603f8)
-  set(MD5_PPM_3x2_FLOAT_32BIT ${MD5_PPM_3x2_FLOAT_SSE})
-  set(MD5_JPEG_3x2_FLOAT_PROG_64BIT ${MD5_JPEG_3x2_FLOAT_PROG_32BIT})
-  set(MD5_PPM_3x2_FLOAT_64BIT ${MD5_PPM_3x2_FLOAT_SSE})
+  set(MD5_JPEG_3x2_FLOAT_PROG_NO_FP_CONTRACT a8c17daf77b457725ec929e215b603f8)
+  set(MD5_PPM_3x2_FLOAT_NO_FP_CONTRACT ${MD5_PPM_3x2_FLOAT_SSE})
+  set(MD5_JPEG_3x2_FLOAT_PROG_FP_CONTRACT
+    ${MD5_JPEG_3x2_FLOAT_PROG_NO_FP_CONTRACT})
+  set(MD5_PPM_3x2_FLOAT_FP_CONTRACT ${MD5_PPM_3x2_FLOAT_SSE})
   set(MD5_JPEG_3x2_FLOAT_PROG_387 bc6dbbefac2872f6b9d6c4a0ae60c3c0)
   set(MD5_PPM_3x2_FLOAT_387 bcc5723c61560463ac60f772e742d092)
   set(MD5_JPEG_3x2_FLOAT_PROG_MSVC e27840755870fa849872e58aa0cd1400)
@@ -744,6 +772,8 @@ else()
   set(MD5_BMP_RGB_ISLOW_565D 4cfa0928ef3e6bb626d7728c924cfda4)
   set(MD5_JPEG_422_IFAST_OPT 2540287b79d913f91665e660303ab2c8)
   set(MD5_PPM_422_IFAST 35bd6b3f833bad23de82acea847129fa)
+  set(MD5_JPEG_440_ISLOW 538bc02bd4b4658fd85de6ece6cbeda6)
+  set(MD5_PPM_440_ISLOW 11e7eab7ef7ef3276934bb7e7b6bb377)
   set(MD5_PPM_422M_IFAST 8dbc65323d62cca7c91ba02dd1cfa81d)
   set(MD5_BMP_422M_IFAST_565 3294bd4d9a1f2b3d08ea6020d0db7065)
   set(MD5_BMP_422M_IFAST_565D da98c9c7b6039511be4a79a878a9abc1)
@@ -759,10 +789,11 @@ else()
 
   set(MD5_JPEG_3x2_FLOAT_PROG_SSE 343e3f8caf8af5986ebaf0bdc13b5c71)
   set(MD5_PPM_3x2_FLOAT_SSE 1a75f36e5904d6fc3a85a43da9ad89bb)
-  set(MD5_JPEG_3x2_FLOAT_PROG_32BIT 9bca803d2042bd1eb03819e2bf92b3e5)
-  set(MD5_PPM_3x2_FLOAT_32BIT f6bfab038438ed8f5522fbd33595dcdc)
-  set(MD5_JPEG_3x2_FLOAT_PROG_64BIT ${MD5_JPEG_3x2_FLOAT_PROG_32BIT})
-  set(MD5_PPM_3x2_FLOAT_64BIT 0e917a34193ef976b679a6b069b1be26)
+  set(MD5_JPEG_3x2_FLOAT_PROG_NO_FP_CONTRACT 9bca803d2042bd1eb03819e2bf92b3e5)
+  set(MD5_PPM_3x2_FLOAT_NO_FP_CONTRACT f6bfab038438ed8f5522fbd33595dcdc)
+  set(MD5_JPEG_3x2_FLOAT_PROG_FP_CONTRACT
+    ${MD5_JPEG_3x2_FLOAT_PROG_NO_FP_CONTRACT})
+  set(MD5_PPM_3x2_FLOAT_FP_CONTRACT 0e917a34193ef976b679a6b069b1be26)
   set(MD5_JPEG_3x2_FLOAT_PROG_387 1657664a410e0822c924b54f6f65e6e9)
   set(MD5_PPM_3x2_FLOAT_387 cb0a1f027f3d2917c902b5640214e025)
   set(MD5_JPEG_3x2_FLOAT_PROG_MSVC 7999ce9cd0ee9b6c7043b7351ab7639d)
@@ -850,11 +881,16 @@ endif()
 #
 # sse = validate against the expected results from the libjpeg-turbo SSE SIMD
 #       extensions
-# 32bit = validate against the expected results from the C code when running on
-#         a 32-bit FPU (or when SSE is being used for floating point math,
-#         which is generally the default with x86-64 compilers)
-# 64bit = validate against the expected results from the C code when running
-#         on a 64-bit FPU
+# no-fp-contract = validate against the expected results from the C code when
+#                  floating point expression contraction is disabled (the
+#                  default with Clang, with GCC when building for platforms
+#                  that lack fused multiply-add [FMA] instructions, or when
+#                  passing -ffp-contract=off to the compiler)
+# fp-contract = validate against the expected results from the C code when
+#               floating point expression contraction is enabled (the default
+#               with GCC when building for platforms that have fused multiply-
+#               add [FMA] instructions or when passing -ffp-contract=fast to
+#               the compiler)
 # 387 = validate against the expected results from the C code when the 387 FPU
 #       is being used for floating point math (which is generally the default
 #       with x86 compilers)
@@ -865,15 +901,20 @@ if(CPU_TYPE STREQUAL "x86_64" OR CPU_TYPE STREQUAL "i386")
   if(WITH_SIMD)
     set(DEFAULT_FLOATTEST sse)
   elseif(CPU_TYPE STREQUAL "x86_64")
-    set(DEFAULT_FLOATTEST 32bit)
+    set(DEFAULT_FLOATTEST no-fp-contract)
   elseif(CPU_TYPE STREQUAL "i386" AND MSVC)
     set(DEFAULT_FLOATTEST msvc)
+  # else we can't really set an intelligent default for i386.  The appropriate
+  # value could be 387, no-fp-contract, or fp-contract, depending on the
+  # compiler and compiler options.  We leave it to the user to set FLOATTEST
+  # manually.
   endif()
 else()
-  if(BITS EQUAL 64)
-    set(DEFAULT_FLOATTEST 64bit)
-  elseif(BITS EQUAL 32)
-    set(DEFAULT_FLOATTEST 32bit)
+  if((CPU_TYPE STREQUAL "powerpc" OR CPU_TYPE STREQUAL "arm64") AND
+    NOT CMAKE_C_COMPILER_ID STREQUAL "Clang" AND NOT MSVC)
+    set(DEFAULT_FLOATTEST fp-contract)
+  else()
+    set(DEFAULT_FLOATTEST no-fp-contract)
   endif()
 endif()
 
@@ -884,15 +925,17 @@ if(DEFINED WITH_SIMD_INT AND NOT WITH_SIMD EQUAL WITH_SIMD_INT)
 endif()
 set(WITH_SIMD_INT ${WITH_SIMD} CACHE INTERNAL "")
 set(FLOATTEST ${DEFAULT_FLOATTEST} CACHE STRING
-  "The type of floating point math used by the floating point DCT/IDCT algorithms.  This tells the testing system which numerical results it should expect from those tests.  [sse = libjpeg-turbo x86/x86-64 SIMD extensions, 32bit = generic 32-bit FPU or SSE, 64bit = generic 64-bit FPU, 387 = 387 FPU, msvc = 32-bit Visual Studio] (default = ${DEFAULT_FLOATTEST})"
+  "The type of floating point math used by the floating point DCT/IDCT algorithms.  This tells the testing system which numerical results it should expect from those tests.  [sse = libjpeg-turbo x86/x86-64 SIMD extensions, no-fp-contract = generic FPU with floating point expression contraction disabled, fp-contract = generic FPU with floating point expression contraction enabled, 387 = 387 FPU, msvc = 32-bit Visual Studio] (default = ${DEFAULT_FLOATTEST})"
   ${FORCE_FLOATTEST})
 message(STATUS "FLOATTEST = ${FLOATTEST}")
 
 if(FLOATTEST)
   string(TOUPPER ${FLOATTEST} FLOATTEST_UC)
+  string(REGEX REPLACE "-" "_" FLOATTEST_UC ${FLOATTEST_UC})
   string(TOLOWER ${FLOATTEST} FLOATTEST)
-  if(NOT FLOATTEST STREQUAL "sse" AND NOT FLOATTEST STREQUAL "32bit" AND
-    NOT FLOATTEST STREQUAL "64bit" AND NOT FLOATTEST STREQUAL "387" AND
+  if(NOT FLOATTEST STREQUAL "sse" AND
+    NOT FLOATTEST STREQUAL "no-fp-contract" AND
+    NOT FLOATTEST STREQUAL "fp-contract" AND NOT FLOATTEST STREQUAL "387" AND
     NOT FLOATTEST STREQUAL "msvc")
     message(FATAL_ERROR "\"${FLOATTEST}\" is not a valid value for FLOATTEST.")
   endif()
@@ -1054,6 +1097,16 @@ foreach(libtype ${TEST_LIBTYPES})
   add_bittest(djpeg 422-ifast "-dct;fast"
     testout_422_ifast.ppm testout_422_ifast_opt.jpg
     ${MD5_PPM_422_IFAST} cjpeg-${libtype}-422-ifast-opt)
+
+  # CC: RGB->YCC  SAMP: fullsize/h1v2  FDCT: islow  ENT: huff
+  add_bittest(cjpeg 440-islow "-sample;1x2;-dct;int"
+    testout_440_islow.jpg ${TESTIMAGES}/testorig.ppm
+    ${MD5_JPEG_440_ISLOW})
+
+  # CC: YCC->RGB  SAMP: fullsize/h1v2 fancy  IDCT: islow  ENT: huff
+  add_bittest(djpeg 440-islow "-dct;int"
+    testout_440_islow.ppm testout_440_islow.jpg
+    ${MD5_PPM_440_ISLOW} cjpeg-${libtype}-440-islow)
 
   # CC: YCC->RGB  SAMP: h2v1 merged  IDCT: ifast  ENT: huff
   add_bittest(djpeg 422m-ifast "-dct;fast;-nosmooth"
@@ -1371,9 +1424,12 @@ set(EXE ${CMAKE_EXECUTABLE_SUFFIX})
 
 if(WITH_TURBOJPEG)
   if(ENABLE_SHARED)
-    install(TARGETS turbojpeg tjbench
+    install(TARGETS turbojpeg EXPORT ${CMAKE_PROJECT_NAME}Targets
+      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(TARGETS tjbench
       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
     if(NOT CMAKE_VERSION VERSION_LESS "3.1" AND MSVC AND
       CMAKE_C_LINKER_SUPPORTS_PDB)
@@ -1382,8 +1438,9 @@ if(WITH_TURBOJPEG)
     endif()
   endif()
   if(ENABLE_STATIC)
-    install(TARGETS turbojpeg-static ARCHIVE
-      DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    install(TARGETS turbojpeg-static EXPORT ${CMAKE_PROJECT_NAME}Targets
+      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
     if(NOT ENABLE_SHARED)
       if(MSVC_IDE OR XCODE)
         set(DIR "${CMAKE_CURRENT_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}")
@@ -1399,7 +1456,9 @@ if(WITH_TURBOJPEG)
 endif()
 
 if(ENABLE_STATIC)
-  install(TARGETS jpeg-static ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  install(TARGETS jpeg-static EXPORT ${CMAKE_PROJECT_NAME}Targets
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
   if(NOT ENABLE_SHARED)
     if(MSVC_IDE OR XCODE)
       set(DIR "${CMAKE_CURRENT_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}")
@@ -1439,6 +1498,13 @@ endif()
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/pkgscripts/libjpeg.pc
   ${CMAKE_CURRENT_BINARY_DIR}/pkgscripts/libturbojpeg.pc
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/pkgscripts/${CMAKE_PROJECT_NAME}Config.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/pkgscripts/${CMAKE_PROJECT_NAME}ConfigVersion.cmake
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${CMAKE_PROJECT_NAME})
+install(EXPORT ${CMAKE_PROJECT_NAME}Targets
+  NAMESPACE ${CMAKE_PROJECT_NAME}::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${CMAKE_PROJECT_NAME})
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/jconfig.h
   ${CMAKE_CURRENT_SOURCE_DIR}/jerror.h ${CMAKE_CURRENT_SOURCE_DIR}/jmorecfg.h
