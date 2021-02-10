@@ -342,8 +342,12 @@ project "jpeg"
 
     configuration { "cocoa_sim64_debug" }
 
+      defines {
+        "WITH_SIMD",
+      }
+
       files {
-        opts_simd_none,
+        opts_simd_arm64,
       }
 
     -- -------------------------------------------------------------
@@ -358,8 +362,12 @@ project "jpeg"
 
     configuration { "cocoa_sim64_release" }
 
+      defines {
+        "WITH_SIMD",
+      }
+
       files {
-        opts_simd_none,
+        opts_simd_arm64,
       }
 
     -- -------------------------------------------------------------
@@ -462,8 +470,12 @@ project "jpeg"
 
     configuration { "ios_sim64_debug" }
 
+      defines {
+        "WITH_SIMD",
+      }
+
       files {
-        opts_simd_none,
+        opts_simd_arm64,
       }
 
     -- -------------------------------------------------------------
@@ -478,8 +490,12 @@ project "jpeg"
 
     configuration { "ios_sim64_release" }
 
+      defines {
+        "WITH_SIMD",
+      }
+
       files {
-        opts_simd_none,
+        opts_simd_arm64,
       }
 
     -- -------------------------------------------------------------
