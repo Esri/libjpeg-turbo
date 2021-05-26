@@ -52,8 +52,9 @@
  * flags (this defines __thumb__).
  */
 
-#if defined(__arm__) || defined(__aarch64__) || defined(_M_ARM) || \
-    defined(_M_ARM64)
+/* NOTE: Both GCC and Clang define __GNUC__ */
+#if (defined(__GNUC__) && (defined(__arm__) || defined(__aarch64__))) || \
+    defined(_M_ARM) || defined(_M_ARM64)
 #if !defined(__thumb__) || defined(__thumb2__)
 #define USE_CLZ_INTRINSIC
 #endif
@@ -867,7 +868,7 @@ encode_mcu_AC_refine_prepare(const JCOEF *block,
 
 #define ENCODE_COEFS_AC_REFINE(label) { \
   while (zerobits) { \
-    int idx = count_zeroes(&zerobits); \
+    idx = count_zeroes(&zerobits); \
     r += idx; \
     cabsvalue += idx; \
     signbits >>= idx; \
@@ -924,7 +925,7 @@ METHODDEF(boolean)
 encode_mcu_AC_refine(j_compress_ptr cinfo, JBLOCKROW *MCU_data)
 {
   phuff_entropy_ptr entropy = (phuff_entropy_ptr)cinfo->entropy;
-  register int temp, r;
+  register int temp, r, idx;
   char *BR_buffer;
   unsigned int BR;
   int Sl = cinfo->Se - cinfo->Ss + 1;
@@ -975,7 +976,7 @@ encode_mcu_AC_refine(j_compress_ptr cinfo, JBLOCKROW *MCU_data)
 
   if (zerobits) {
     int diff = ((absvalues + DCTSIZE2 / 2) - cabsvalue);
-    int idx = count_zeroes(&zerobits);
+    idx = count_zeroes(&zerobits);
     signbits >>= idx;
     idx += diff;
     r += idx;
