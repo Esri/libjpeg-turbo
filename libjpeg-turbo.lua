@@ -101,6 +101,10 @@ if (_PLATFORM_ANDROID) then
     "WITH_SIMD",
   }
 
+  includedirs {
+    "simd/arm",
+  }
+
   files {
     opts_simd_arm64,
   }
@@ -109,6 +113,10 @@ if (_PLATFORM_ANDROID) then
 
   defines {
     "WITH_SIMD",
+  }
+
+  includedirs {
+    "simd/arm",
   }
 
   files {
@@ -135,6 +143,10 @@ if (_PLATFORM_COCOA) then
     "WITH_SIMD",
   }
 
+  includedirs {
+    "simd/arm",
+  }
+
   files {
     opts_simd_arm64,
   }
@@ -151,6 +163,10 @@ if (_PLATFORM_IOS) then
 
   defines {
     "WITH_SIMD",
+  }
+
+  includedirs {
+    "simd/arm",
   }
 
   files {
