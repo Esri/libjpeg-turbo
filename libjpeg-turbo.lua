@@ -62,3 +62,10 @@ files {
   "jsimd_none.c",
   "jutils.c",
 }
+
+if (_PLATFORM_WINUWP) then
+  defines {
+    "HAVE_BOOLEAN",
+    "_CRT_SECURE_NO_WARNINGS",
+  }
+end
