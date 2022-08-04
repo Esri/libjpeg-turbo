@@ -1,5 +1,5 @@
 /* libjpeg-turbo build number */
-#define BUILD  "20210125"
+#define BUILD "20220802"
 
 /* Compiler's inline keyword */
 #undef inline
@@ -8,27 +8,24 @@
 #if defined(_WIN32)
 #define INLINE __forceinline
 #else
-#define INLINE  __inline__ __attribute__((always_inline))
+#define INLINE __inline__ __attribute__((always_inline))
+#endif
+
+/* How to obtain thread-local storage */
+#if defined(_WIN32)
+#define THREAD_LOCAL __declspec(thread)
+#else
+#define THREAD_LOCAL __thread
 #endif
 
 /* Define to the full name of this package. */
-#define PACKAGE_NAME  "libjpeg-turbo"
+#define PACKAGE_NAME "libjpeg-turbo"
 
 /* Version number of package */
-#define VERSION  "2.0.6"
+#define VERSION "2.1.3"
 
-/* The size of `size_t', as reported by the compiler through the
- * builtin macro __SIZEOF_SIZE_T__. If the compiler does not
- * report __SIZEOF_SIZE_T__ add a custom rule for the compiler
- * here. Adapted from libjpeg-turbo config files for the skia 
- * library. */
-#ifdef __SIZEOF_SIZE_T__
-#define SIZEOF_SIZE_T __SIZEOF_SIZE_T__
-#elif __WORDSIZE==64 || defined(_WIN64)
+/* The size of `size_t', as computed by sizeof. */
 #define SIZEOF_SIZE_T 8
-#else
-#define SIZEOF_SIZE_T 4
-#endif
 
 /* Define if your compiler has __builtin_ctzl() and sizeof(unsigned long) == sizeof(size_t). */
 #if !defined(_WIN32)
@@ -46,4 +43,14 @@
 #elif (SIZEOF_SIZE_T == 4)
 #define HAVE_BITSCANFORWARD
 #endif
+#endif
+
+#if defined(__has_attribute)
+#if __has_attribute(fallthrough)
+#define FALLTHROUGH __attribute__((fallthrough));
+#else
+#define FALLTHROUGH
+#endif
+#else
+#define FALLTHROUGH
 #endif
