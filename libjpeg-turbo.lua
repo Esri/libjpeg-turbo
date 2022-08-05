@@ -63,8 +63,15 @@ files {
   "jutils.c",
 }
 
+if (_PLATFORM_WINDOWS) then
+  defines {
+    "TURBO_FOR_WINDOWS",
+  }
+end
+
 if (_PLATFORM_WINUWP) then
   defines {
+    "TURBO_FOR_WINDOWS",
     "_CRT_SECURE_NO_WARNINGS",
   }
 end
