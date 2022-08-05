@@ -24,8 +24,18 @@
 /* Version number of package */
 #define VERSION "2.1.3"
 
-/* The size of `size_t', as computed by sizeof. */
+/* The size of `size_t', as reported by the compiler through the
+ * builtin macro __SIZEOF_SIZE_T__. If the compiler does not
+ * report __SIZEOF_SIZE_T__ add a custom rule for the compiler
+ * here. Adapted from libjpeg-turbo config files for the skia 
+ * library. */
+#ifdef __SIZEOF_SIZE_T__
+#define SIZEOF_SIZE_T __SIZEOF_SIZE_T__
+#elif __WORDSIZE == 64 || defined(_WIN64)
 #define SIZEOF_SIZE_T 8
+#else
+#define SIZEOF_SIZE_T 4
+#endif
 
 /* Define if your compiler has __builtin_ctzl() and sizeof(unsigned long) == sizeof(size_t). */
 #if !defined(_WIN32)
