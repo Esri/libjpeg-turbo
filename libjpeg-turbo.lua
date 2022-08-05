@@ -65,6 +65,7 @@ files {
 
 if (_PLATFORM_WINUWP) then
   defines {
+    "HAVE_BITSCANFORWARD64",
     "_CRT_SECURE_NO_WARNINGS",
   }
 end
