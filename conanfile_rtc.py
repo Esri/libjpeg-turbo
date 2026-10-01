@@ -2,7 +2,7 @@ from conans import ConanFile
 
 
 class JpegConan(ConanFile):
-    name = "jpeg"
+    name = "libjpeg-turbo"
     version = "2.1.3"
     url = "https://github.com/Esri/libjpeg-turbo/tree/runtimecore"
     license = "https://github.com/Esri/libjpeg-turbo/blob/runtimecore/LICENSE.md"
@@ -23,4 +23,4 @@ class JpegConan(ConanFile):
 
         # libraries
         output = "output/" + str(self.settings.platform_architecture_target) + "/staticlib"
-        self.copy("*" + self.name + "*", src=base + "../../" + output, dst=output)
+        self.copy("*jpeg*", src=base + "../../" + output, dst=output, excludes="*openjpeg*")
